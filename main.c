@@ -405,34 +405,18 @@ int main(int argc, char *argv[]) {
    Begin your code here 	  			       */
 
 /***************************************************************/
-int convertToValue(int rValue){
-    switch(rValue){
-        case 0:
-            return CURRENT_LATCHES.REGS[0];
-        case 1:
-            return CURRENT_LATCHES.REGS[1];
-        case 2:
-            return CURRENT_LATCHES.REGS[2];
-        case 3:
-            return CURRENT_LATCHES.REGS[3];
-        case 4:
-            return CURRENT_LATCHES.REGS[4];
-        case 5:
-            return CURRENT_LATCHES.REGS[5];
-        case 6:
-            return CURRENT_LATCHES.REGS[6];
-        case 7:
-            return CURRENT_LATCHES.REGS[7];
-    }
-}
-
 
 //bits 11:9
 int getR0(int instruction){
     int output = instruction>>9;
     output &= 0x0007;
-    output = convertToValue(output);
-    return output;
+    return CURRENT_LATCHES.REGS[output];
+}
+
+
+int getDR(int instruction){
+    int instructionValue = instruction>>9;
+    return instructionValue&0x0007;
 }
 
 
@@ -440,17 +424,18 @@ int getR0(int instruction){
 int getR1(int instruction){
     int output = instruction>>6;
     output &= 0x0007;
-    output = convertToValue(output);
-    return output;
+    return CURRENT_LATCHES.REGS[output];
 }
 
 
 //bits 2:0
 int getR2(int instruction){
     int output = instruction & 0x0007;
-    output = convertToValue(output);
-    return output;
+    return CURRENT_LATCHES.REGS[output];
 }
+
+
+
 
 int calculateShiftedOffset(int instruction, int bits){
     int mask = 0xFFFF;
@@ -458,11 +443,15 @@ int calculateShiftedOffset(int instruction, int bits){
     instruction = instruction<<1;
     return instruction;
 }
+
+
 int calculateUnshiftedOffset(int instruction, int bits){
     int mask = 0xFFFF;
     instruction &= (mask>>(16-bits));
     return instruction;
 }
+
+
 void setNZP(int value){
     if(value>0){
         NEXT_LATCHES.N=0;
@@ -480,8 +469,8 @@ void setNZP(int value){
     NEXT_LATCHES.N=1;
     NEXT_LATCHES.Z=0;
     NEXT_LATCHES.P=0;
-
 }
+
 
 
 void process_instruction(){

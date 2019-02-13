@@ -408,21 +408,21 @@ int main(int argc, char *argv[]) {
 int convertToValue(int rValue){
     switch(rValue){
         case 0:
-            break;
+            return CURRENT_LATCHES.REGS[0];
         case 1:
-            break;
+            return CURRENT_LATCHES.REGS[1];
         case 2:
-            break;
+            return CURRENT_LATCHES.REGS[2];
         case 3:
-            break;
+            return CURRENT_LATCHES.REGS[3];
         case 4:
-            break;
+            return CURRENT_LATCHES.REGS[4];
         case 5:
-            break;
+            return CURRENT_LATCHES.REGS[5];
         case 6:
-            break;
+            return CURRENT_LATCHES.REGS[6];
         case 7:
-            break;
+            return CURRENT_LATCHES.REGS[7];
     }
 }
 
@@ -452,9 +452,41 @@ int getR2(int instruction){
     return output;
 }
 
+int calculateShiftedOffset(int instruction, int bits){
+    int mask = 0xFFFF;
+    instruction &= (mask>>(16-bits));
+    instruction = instruction<<1;
+    return instruction;
+}
+int calculateUnshiftedOffset(int instruction, int bits){
+    int mask = 0xFFFF;
+    instruction &= (mask>>(16-bits));
+    return instruction;
+}
+void setNZP(int value){
+    if(value>0){
+        NEXT_LATCHES.N=0;
+        NEXT_LATCHES.Z=0;
+        NEXT_LATCHES.P=1;
+        return;
+    }
+    if(value==0){
+        if(value>0){
+            NEXT_LATCHES.N=0;
+            NEXT_LATCHES.Z=1;
+            NEXT_LATCHES.P=0;
+        }
+    }
+    NEXT_LATCHES.N=1;
+    NEXT_LATCHES.Z=0;
+    NEXT_LATCHES.P=0;
+
+}
+
 
 void process_instruction(){
     int instruction = MEMORY[CURRENT_LATCHES.PC][0] + (MEMORY[CURRENT_LATCHES.PC][1]<<8);
+    NEXT_LATCHES.PC = CURRENT_LATCHES.PC+2;
     int opcode = instruction>>12;
     switch(opcode){
         case 0:
@@ -507,7 +539,6 @@ void process_instruction(){
             break;
         default: exit(10);
     }
-    NEXT_LATCHES.PC = CURRENT_LATCHES.PC+2;
   /*  function: process_instruction
    *
    *    Process one instruction at a time

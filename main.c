@@ -405,11 +405,56 @@ int main(int argc, char *argv[]) {
    Begin your code here 	  			       */
 
 /***************************************************************/
+int convertToValue(int rValue){
+    switch(rValue){
+        case 0:
+            break;
+        case 1:
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        case 4:
+            break;
+        case 5:
+            break;
+        case 6:
+            break;
+        case 7:
+            break;
+    }
+}
 
+
+//bits 11:9
+int getR0(int instruction){
+    int output = instruction>>9;
+    output &= 0x0007;
+    output = convertToValue(output);
+    return output;
+}
+
+
+//bits 8:6
+int getR1(int instruction){
+    int output = instruction>>6;
+    output &= 0x0007;
+    output = convertToValue(output);
+    return output;
+}
+
+
+//bits 2:0
+int getR2(int instruction){
+    int output = instruction & 0x0007;
+    output = convertToValue(output);
+    return output;
+}
 
 
 void process_instruction(){
-    int instruction = MEMORY[CURRENT_LATCHES.PC][0]+ (MEMORY[CURRENT_LATCHES.PC][1]<<8);
+    int instruction = MEMORY[CURRENT_LATCHES.PC][0] + (MEMORY[CURRENT_LATCHES.PC][1]<<8);
     int opcode = instruction>>12;
     switch(opcode){
         case 0:
@@ -460,6 +505,7 @@ void process_instruction(){
         case 15:
             //
             break;
+        default: exit(10);
     }
     NEXT_LATCHES.PC = CURRENT_LATCHES.PC+2;
   /*  function: process_instruction

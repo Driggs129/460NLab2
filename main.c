@@ -471,6 +471,21 @@ void setNZP(int value){
     NEXT_LATCHES.P=0;
 }
 
+int checkBranch(int instruction){
+    int nzpBits = getDR(instruction);
+    int n, z, p;
+    p = nzpBits & 0x01;
+    z = (nzpBits & 0x02)>>1;
+    n = (nzpBits&0x04)>>2;
+    if((CURRENT_LATCHES.N==n)||
+            (CURRENT_LATCHES.Z==z)||
+            (CURRENT_LATCHES.P==p)){
+        return 1;
+    }
+    return 0;
+}
+
+
 
 
 void process_instruction(){

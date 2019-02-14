@@ -482,49 +482,49 @@ void process_instruction(){
             //BR
             break;
         case 1:
-            //
+            //ADD
             break;
         case 2:
-            //
+            //LDB
             break;
         case 3:
-            //
+            //STB
             break;
         case 4:
-            //
+            //JSR
             break;
         case 5:
-            //
+            //AND
             break;
         case 6:
-            //
+            //LDW
             break;
         case 7:
-            //
+            //STW
             break;
         case 8:
-            //
+            //RTI
             break;
         case 9:
-            //
+            //XOR
             break;
-        case 10:
-            //
+        /*case 10:
+            //NOT USED
             break;
         case 11:
-            //
-            break;
+            //NOT USED
+            break;*/
         case 12:
-            //
+            //JMP
             break;
         case 13:
-            //
+            //SHF
             break;
         case 14:
-            //
+            //LEA
             break;
         case 15:
-            //
+            //TRAP
             break;
         default: exit(10);
     }

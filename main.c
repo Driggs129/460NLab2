@@ -438,16 +438,26 @@ int getR2(int instruction){
 
 
 int calculateShiftedOffset(int instruction, int bits){
-    int mask = 0xFFFF;
+    const unsigned int mask = 0xFFFF;
+    int signedBit = 0x1000;
+    signedBit = instruction & (signedBit>>(16-bits));
     instruction &= (mask>>(16-bits));
+    if(signedBit){
+        instruction|=mask<<bits;
+    }
     instruction = instruction<<1;
     return instruction;
 }
 
 
 int calculateUnshiftedOffset(int instruction, int bits){
-    int mask = 0xFFFF;
+    const unsigned int mask = 0xFFFF;
+    int signedBit = 0x1000;
+    signedBit = instruction & (signedBit>>(16-bits));
     instruction &= (mask>>(16-bits));
+    if(signedBit){
+        instruction|=mask<<bits;
+    }
     return instruction;
 }
 
@@ -489,33 +499,53 @@ int checkBranch(int instruction){
 
 
 void process_instruction(){
-    int instruction = MEMORY[CURRENT_LATCHES.PC][0] + (MEMORY[CURRENT_LATCHES.PC][1]<<8);
+    int instruction = MEMORY[CURRENT_LATCHES.PC/2][0] + (MEMORY[CURRENT_LATCHES.PC/2][1]<<8);
     NEXT_LATCHES.PC = CURRENT_LATCHES.PC+2;
     int opcode = instruction>>12;
+    int bitValue = 0;
     switch(opcode){
         case 0:
             //BR
             break;
         case 1:
             //ADD
+            NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) + getR2(instruction));
             break;
         case 2:
+            NEXT_LATCHES.REGS[getDR(instruction)]=MEMORY[calculateUnshiftedOffset(instruction,6)/2][calculateUnshiftedOffset(instruction,6)%2];
             //LDB
             break;
         case 3:
+            MEMORY[calculateUnshiftedOffset(instruction,6)/2][calculateUnshiftedOffset(instruction,6)%2]=getR1(instruction);
             //STB
             break;
         case 4:
             //JSR
+            bitValue = (instruction>>11)&0x01;
+            if(bitValue==0){
+                //JSRR
+                NEXT_LATCHES.PC=CURRENT_LATCHES.PC+calculateShiftedOffset(instruction,11);
+                NEXT_LATCHES.REGS[7] = CURRENT_LATCHES.PC;
+            }
+            else{
+                //JSR
+                NEXT_LATCHES.REGS[7] = CURRENT_LATCHES.PC;
+                NEXT_LATCHES.PC = getR1(instruction);
+            }
             break;
         case 5:
             //AND
+            NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) & getR2(instruction));
             break;
         case 6:
             //LDW
+            NEXT_LATCHES.REGS[getDR(instruction)] = MEMORY[calculateShiftedOffset(instruction,6)][0]+
+                                                (MEMORY[calculateShiftedOffset(instruction,6)][1]<<8);
             break;
         case 7:
             //STW
+            MEMORY[getDR(instruction)][0] = getR1(instruction)& 0x00FF;
+            MEMORY[getDR(instruction)][1] = getR1(instruction)>>8;
             break;
         case 8:
             //RTI

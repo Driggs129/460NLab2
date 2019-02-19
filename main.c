@@ -3,10 +3,10 @@
     in this comment.
     REFER TO THE SUBMISSION INSTRUCTION FOR DETAILS
 
-    Name 1: Full name of the first partner
-    Name 2: Full name of the second partner
-    UTEID 1: UT EID of the first partner
-    UTEID 2: UT EID of the second partner
+    Name 1: Douglas Riggs
+    Name 2: Ran Trakhtengerts
+    UTEID 1: Dwr726
+    UTEID 2: rt24869
 */
 
 /***************************************************************/
@@ -445,14 +445,14 @@ int getImmediate(int instruction){
 
 
 int calculateShiftedOffset(int instruction, int bits){
-    const unsigned int mask = 0xFFFFFFFF;
+    const unsigned int mask = 0x0000FFFF;
     int signedBit = 0x00001000;
     signedBit = instruction & (signedBit>>(16-bits));
     instruction &= (mask>>(16-bits));
     if(signedBit){
         instruction|=mask<<bits;
     }
-    instruction = instruction<<1;
+    instruction = Low16bits(instruction<<1);
     return instruction;
 }
 
@@ -521,15 +521,19 @@ void process_instruction(){
     switch(opcode){
         case 0:
             //BR
+            if(checkBranch(instruction)){
+                NEXT_LATCHES.PC = Low16bits(CURRENT_LATCHES.PC+2+calculateShiftedOffset(instruction,9));
+            }
             break;
         case 1:
             //ADD
             if(isImmediate(instruction)){
-                NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) + getR2(instruction));
+                NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) + getImmediate(instruction));
                 setNZP(getR1(instruction) + getR2(instruction));
             }
             else{
-
+                NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) + getR2(instruction));
+                setNZP(getR1(instruction) + getR2(instruction));
             }
             break;
         case 2:
@@ -563,7 +567,8 @@ void process_instruction(){
         case 5:
             //AND
             if(isImmediate(instruction)){
-
+                NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) & getImmediate(instruction));
+                setNZP(getR1(instruction) & getR2(instruction));
             }
             else{
                 NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) & getR2(instruction));
@@ -590,7 +595,8 @@ void process_instruction(){
         case 9:
             //XOR
             if(isImmediate(instruction)){
-
+                NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) ^ getImmediate(instruction));
+                setNZP(getR1(instruction) ^ getR2(instruction));
             }
             else{
                 NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) ^ getR2(instruction));

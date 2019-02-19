@@ -409,37 +409,41 @@ int main(int argc, char *argv[]) {
 //bits 11:9
 int getR0(int instruction){
     int output = instruction>>9;
-    output &= 0x0007;
+    output &= 0x00000007;
     return CURRENT_LATCHES.REGS[output];
 }
 
 
 int getDR(int instruction){
     int instructionValue = instruction>>9;
-    return instructionValue&0x0007;
+    return instructionValue&0x00000007;
 }
 
 
 //bits 8:6
 int getR1(int instruction){
     int output = instruction>>6;
-    output &= 0x0007;
+    output &= 0x00000007;
     return CURRENT_LATCHES.REGS[output];
 }
 
 
 //bits 2:0
 int getR2(int instruction){
-    int output = instruction & 0x0007;
+    int output = instruction & 0x00000007;
     return CURRENT_LATCHES.REGS[output];
+}
+
+int getImmediate(int instruction){
+    
 }
 
 
 
 
 int calculateShiftedOffset(int instruction, int bits){
-    const unsigned int mask = 0xFFFF;
-    int signedBit = 0x1000;
+    const unsigned int mask = 0xFFFFFFFF;
+    int signedBit = 0x00001000;
     signedBit = instruction & (signedBit>>(16-bits));
     instruction &= (mask>>(16-bits));
     if(signedBit){
@@ -451,8 +455,8 @@ int calculateShiftedOffset(int instruction, int bits){
 
 
 int calculateUnshiftedOffset(int instruction, int bits){
-    const unsigned int mask = 0xFFFF;
-    int signedBit = 0x1000;
+    const unsigned int mask = 0x0000FFFF;
+    int signedBit = 0x00001000;
     signedBit = instruction & (signedBit>>(16-bits));
     instruction &= (mask>>(16-bits));
     if(signedBit){
@@ -484,9 +488,9 @@ void setNZP(int value){
 int checkBranch(int instruction){
     int nzpBits = getDR(instruction);
     int n, z, p;
-    p = nzpBits & 0x01;
-    z = (nzpBits & 0x02)>>1;
-    n = (nzpBits&0x04)>>2;
+    p = nzpBits & 0x00000001;
+    z = (nzpBits & 0x00000002)>>1;
+    n = (nzpBits&0x00000004)>>2;
     if((CURRENT_LATCHES.N==n)||
             (CURRENT_LATCHES.Z==z)||
             (CURRENT_LATCHES.P==p)){
@@ -495,6 +499,12 @@ int checkBranch(int instruction){
     return 0;
 }
 
+int isImmediate(int instruction){
+    if(instruction & 0x00000010){
+        return 1;
+    }
+    return 0;
+}
 
 
 
@@ -503,6 +513,7 @@ void process_instruction(){
     NEXT_LATCHES.PC = CURRENT_LATCHES.PC+2;
     int opcode = instruction>>12;
     int bitValue = 0;
+    int value = 0;
     switch(opcode){
         case 0:
             //BR
@@ -510,9 +521,16 @@ void process_instruction(){
         case 1:
             //ADD
             NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) + getR2(instruction));
+            setNZP(getR1(instruction) + getR2(instruction));
             break;
         case 2:
-            NEXT_LATCHES.REGS[getDR(instruction)]=MEMORY[calculateUnshiftedOffset(instruction,6)/2][calculateUnshiftedOffset(instruction,6)%2];
+            value = MEMORY[calculateUnshiftedOffset(instruction,6)/2]
+            [calculateUnshiftedOffset(instruction,6)%2];
+            if((value&0x00000010)>0){
+                value = value|=0x0000FF00;
+            }
+            NEXT_LATCHES.REGS[getDR(instruction)]=value;
+            setNZP(value);
             //LDB
             break;
         case 3:
@@ -521,7 +539,7 @@ void process_instruction(){
             break;
         case 4:
             //JSR
-            bitValue = (instruction>>11)&0x01;
+            bitValue = (instruction>>11)&0x00000001;
             if(bitValue==0){
                 //JSRR
                 NEXT_LATCHES.PC=CURRENT_LATCHES.PC+calculateShiftedOffset(instruction,11);
@@ -536,22 +554,28 @@ void process_instruction(){
         case 5:
             //AND
             NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) & getR2(instruction));
+            setNZP(getR1(instruction) & getR2(instruction));
             break;
         case 6:
             //LDW
-            NEXT_LATCHES.REGS[getDR(instruction)] = MEMORY[calculateShiftedOffset(instruction,6)][0]+
-                                                (MEMORY[calculateShiftedOffset(instruction,6)][1]<<8);
+            NEXT_LATCHES.REGS[getDR(instruction)] = MEMORY[calculateShiftedOffset(instruction,6)/2][0]+
+                                                (MEMORY[calculateShiftedOffset(instruction,6)/2][1]<<8);
+            setNZP(MEMORY[calculateShiftedOffset(instruction,6)/2][0]+
+                   (MEMORY[calculateShiftedOffset(instruction,6)/2][1]<<8));
             break;
         case 7:
             //STW
-            MEMORY[getDR(instruction)][0] = getR1(instruction)& 0x00FF;
-            MEMORY[getDR(instruction)][1] = getR1(instruction)>>8;
+            MEMORY[getR1(instruction)/2][0] = getR0(instruction)& 0x000000FF;
+            MEMORY[getR1(instruction)/2][1] = getR0(instruction)>>8;
             break;
         case 8:
             //RTI
+            //unnecessary to implement
             break;
         case 9:
             //XOR
+            NEXT_LATCHES.REGS[getDR(instruction)]=Low16bits(getR1(instruction) ^ getR2(instruction));
+            setNZP(getR1(instruction) ^ getR2(instruction));
             break;
         /*case 10:
             //NOT USED
@@ -560,10 +584,21 @@ void process_instruction(){
             //NOT USED
             break;*/
         case 12:
+            NEXT_LATCHES.PC = getR1(instruction);
             //JMP
             break;
         case 13:
             //SHF
+            if ((instruction&0x00000010)) {
+               //RSHF
+            }
+            else{
+                //LSHF
+                if(isImmediate(instruction)){
+
+                }
+                getR1(instruction)<<
+            }
             break;
         case 14:
             //LEA
